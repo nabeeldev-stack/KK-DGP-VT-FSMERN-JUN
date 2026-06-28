@@ -18,11 +18,41 @@ const userSchema = mongoose.Schema(
         required: true
     },
 
-    totalScore: {
-        type: Number,
-        default: 0
-    }
+    role: {
+    type: String,
+    enum: ["user", "admin"],
+    default: "user"
 },
+
+totalScore: {
+    type: Number,
+    default: 0
+},
+
+isVerified: {
+    type: Boolean,
+    default: false
+},
+
+isBanned: {
+    type: Boolean,
+    default: false
+},
+
+otp: String,
+otpExpires: Date,
+
+resetPasswordToken: String,
+restPasswordToken: String,
+resetPasswordExpires: Date,
+    refreshToken: String,
+    
+    avatar: {
+        type: String,
+        default: ""
+    }
+        
+    },
 {
     timestamps: true
 }
