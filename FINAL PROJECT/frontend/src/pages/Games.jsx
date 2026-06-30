@@ -57,9 +57,9 @@ function Games() {
     }
 
     return (
-        <div className="min-h-screen text-white">
+        <div className="min-h-screen text-white pt-24">
             {/* Header Section */}
-            <div className="relative py-20 bg-gradient-to-br from-[#1a0505] via-[#0a0a0b] to-[#120202]">
+            <div className="relative py-20 bg-gradient-to-br from-[#1a0000] via-[#0a0a0b] to-[#120000]">
                 {/* Red Glow */}
                 <div className="absolute top-0 left-1/2 h-[400px] w-[400px] -translate-x-1/2 rounded-full bg-red-600/10 blur-[150px]" />
                 
@@ -102,7 +102,7 @@ function Games() {
             </div>
 
             {/* Games Grid */}
-            <div className="max-w-7xl mx-auto px-6 pb-20 bg-gradient-to-br from-[#1a0505] via-[#0a0a0b] to-[#120202]">
+            <div className="max-w-7xl mx-auto px-6 pb-20">
                 {games.length === 0 ? (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}

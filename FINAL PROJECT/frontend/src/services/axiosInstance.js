@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-    baseURL: "http://localhost:5000/api",
+    baseURL: "http://localhost:5002/api",
 });
 
 axiosInstance.interceptors.request.use(
@@ -32,7 +32,7 @@ axiosInstance.interceptors.response.use(
                 }
 
                 const { data } = await axios.post(
-                    "http://localhost:5000/api/users/refresh",
+                    "http://localhost:5002/api/users/refresh",
                     { refreshToken }
                 );
 

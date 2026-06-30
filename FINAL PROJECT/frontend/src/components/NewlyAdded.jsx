@@ -4,9 +4,9 @@ import { FaFire, FaStar, FaGamepad, FaArrowRight } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import axios from "axios";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API = import.meta.env.VITE_API_URL || "http://localhost:5002";
 
-const NewlyAdded = () => {
+const NewlyAdded = ({ isLoggedIn = false }) => {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -67,7 +67,7 @@ const NewlyAdded = () => {
         {/* Games Grid - Single Row of 4 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {games.map((game, index) => (
-            <GameCard key={game._id} game={game} index={index} />
+            <GameCard key={game._id} game={game} index={index} isLoggedIn={isLoggedIn} />
           ))}
         </div>
 
@@ -79,13 +79,19 @@ const NewlyAdded = () => {
           transition={{ duration: 0.6 }}
           className="mt-12 text-center"
         >
-          <Link
-            to="/games"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold hover:shadow-[0_0_30px_rgba(239,68,68,0.5)] transition-all duration-300 hover:scale-105"
-          >
-            View All Games
-            <FaArrowRight />
-          </Link>
+          {isLoggedIn ? (
+            <Link
+              to="/games"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold hover:shadow-[0_0_30px_rgba(239,68,68,0.5)] transition-all duration-300 hover:scale-105"
+            >
+              View All Games
+              <FaArrowRight />
+            </Link>
+          ) : (
+            <div className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gray-700/50 text-gray-400 font-semibold cursor-not-allowed">
+              🔒 Login to View
+            </div>
+          )}
         </motion.div>
       </div>
     </section>
@@ -93,15 +99,17 @@ const NewlyAdded = () => {
 };
 
 // Game Card Component
-const GameCard = ({ game, index }) => {
+const GameCard = ({ game, index, isLoggedIn }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay: index * 0.05 }}
-      whileHover={{ y: -8, scale: 1.02 }}
-      className="group relative overflow-hidden rounded-xl border border-red-500/20 bg-white/5 backdrop-blur-xl transition-all duration-300 hover:border-red-500/40"
+      whileHover={isLoggedIn ? { y: -8, scale: 1.02 } : {}}
+      className={`group relative overflow-hidden rounded-xl border border-red-500/20 bg-white/5 backdrop-blur-xl transition-all duration-300 ${
+        isLoggedIn ? "hover:border-red-500/40 cursor-pointer" : "cursor-not-allowed opacity-75"
+      }`}
     >
       {/* Image */}
       <div className="relative h-40 overflow-hidden">

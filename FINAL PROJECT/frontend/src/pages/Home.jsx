@@ -9,6 +9,12 @@ import Testimonials from "../components/Testimonials";
 import Stats from "../components/Stats";
 import Footer from "../components/Footer";
 
+function useAuth() {
+  const token = localStorage.getItem("accessToken");
+  const user = localStorage.getItem("user");
+  return !!(token && user);
+}
+
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
   visible: {
@@ -22,6 +28,8 @@ const fadeUp = {
 };
 
 export default function Home() {
+  const isLoggedIn = useAuth();
+
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#1a0000] via-[#0a0a0b] to-[#120000] text-white">
 
@@ -36,7 +44,7 @@ export default function Home() {
         viewport={{ once: true, margin: "-50px" }}
         className="relative py-24"
       >
-        <Featured />
+        <Featured isLoggedIn={isLoggedIn} />
       </motion.section>
 
       {/* Newly Added Games */}
@@ -47,7 +55,7 @@ export default function Home() {
         viewport={{ once: true, margin: "-50px" }}
         className="relative py-24"
       >
-        <NewlyAdded />
+        <NewlyAdded isLoggedIn={isLoggedIn} />
       </motion.section>
 
       {/* Categories */}
@@ -58,7 +66,7 @@ export default function Home() {
         viewport={{ once: true, margin: "-50px" }}
         className="relative py-24"
       >
-        <Categories />
+        <Categories isLoggedIn={isLoggedIn} />
       </motion.section>
 
       {/* Why Choose Us */}

@@ -1,4 +1,5 @@
 const User = require("../models/user");
+const Friend = require("../models/friend");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const sendEmail = require("../utils/sendEmail");
@@ -8,6 +9,76 @@ const {
     generateAccessToken,
     generateRefreshToken
 } = require("../utils/generateTokens");
+const cloudinary = require("../config/cloudinary");
+const streamifier = require("streamifier");
+
+
+const checkUsernameAvailability = async (req, res) => {
+    try {
+        const { username } = req.body;
+
+        if (!username || username.length < 3) {
+            return res.status(400).json({
+                available: false,
+                message: "Username must be at least 3 characters"
+            });
+        }
+
+        // Check if username contains only alphanumeric characters and underscores
+        const usernameRegex = /^[a-zA-Z0-9_]+$/;
+        if (!usernameRegex.test(username)) {
+            return res.status(400).json({
+                available: false,
+                message: "Username can only contain letters, numbers, and underscores"
+            });
+        }
+
+        const existingUser = await User.findOne({ username });
+
+        if (existingUser) {
+            // Generate suggestions
+            const suggestions = [];
+            const baseUsername = username.toLowerCase();
+            
+            // Add numbers to the end
+            for (let i = 1; i <= 5; i++) {
+                suggestions.push(`${baseUsername}${i}`);
+            }
+            
+            // Add underscore and numbers
+            for (let i = 1; i <= 3; i++) {
+                suggestions.push(`${baseUsername}_${i}`);
+            }
+
+            // Check which suggestions are available
+            const availableSuggestions = [];
+            for (const suggestion of suggestions) {
+                const exists = await User.findOne({ username: suggestion });
+                if (!exists) {
+                    availableSuggestions.push(suggestion);
+                }
+                if (availableSuggestions.length >= 5) break;
+            }
+
+            return res.status(200).json({
+                available: false,
+                message: "Username is already taken",
+                suggestions: availableSuggestions
+            });
+        }
+
+        res.status(200).json({
+            available: true,
+            message: "Username is available"
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
 
 const registerUser = async (req, res) => {
     try {
@@ -31,12 +102,33 @@ const registerUser = async (req, res) => {
             });
         }
 
-        const userExists = await User.findOne({ email });
+        // Validate username format
+        const usernameRegex = /^[a-zA-Z0-9_]+$/;
+        if (!usernameRegex.test(username)) {
+            return res.status(400).json({
+                message: "Username can only contain letters, numbers, and underscores"
+            });
+        }
+
+        if (username.length < 3 || username.length > 30) {
+            return res.status(400).json({
+                message: "Username must be between 3 and 30 characters"
+            });
+        }
+
+        const userExists = await User.findOne({ $or: [{ email }, { username }] });
 
         if (userExists) {
-            return res.status(400).json({
-                message: "User already exists"
-            });
+            if (userExists.email === email) {
+                return res.status(400).json({
+                    message: "Email already registered"
+                });
+            }
+            if (userExists.username === username) {
+                return res.status(400).json({
+                    message: "Username is already taken"
+                });
+            }
         }
 
         const salt = await bcrypt.genSalt(10);
@@ -204,7 +296,8 @@ const loginUser = async (req, res) => {
                     id: user._id,
                     username: user.username,
                     email: user.email,
-                    role: user.role
+                    role: user.role,
+                    avatar: user.avatar || ""
                 },
                 accessToken,
                 refreshToken
@@ -292,6 +385,85 @@ const getUserProfile = async (req, res) => {
     }
 };
 
+const updateProfile = async (req, res) => {
+    try {
+        const { username, email, currentPassword, newPassword } = req.body;
+        const user = await User.findById(req.user._id);
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        if (username) {
+            // Validate username format
+            const usernameRegex = /^[a-zA-Z0-9_]+$/;
+            if (!usernameRegex.test(username)) {
+                return res.status(400).json({
+                    message: "Username can only contain letters, numbers, and underscores"
+                });
+            }
+
+            if (username.length < 3 || username.length > 30) {
+                return res.status(400).json({
+                    message: "Username must be between 3 and 30 characters"
+                });
+            }
+
+            // Check if username is already taken by another user
+            const existingUser = await User.findOne({ 
+                username, 
+                _id: { $ne: user._id } 
+            });
+            
+            if (existingUser) {
+                return res.status(400).json({
+                    message: "Username is already taken"
+                });
+            }
+            
+            user.username = username;
+        }
+
+        if (email) {
+            const emailExists = await User.findOne({ email, _id: { $ne: user._id } });
+            if (emailExists) {
+                return res.status(400).json({ message: "Email already in use" });
+            }
+            user.email = email;
+        }
+
+        if (newPassword) {
+            if (!currentPassword) {
+                return res.status(400).json({ message: "Current password is required to set a new password" });
+            }
+
+            const isMatch = await bcrypt.compare(currentPassword, user.password);
+            if (!isMatch) {
+                return res.status(400).json({ message: "Current password is incorrect" });
+            }
+
+            if (newPassword.length < 6) {
+                return res.status(400).json({ message: "New password must be at least 6 characters" });
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(newPassword, salt);
+        }
+
+        const updatedUser = await user.save();
+        res.json({
+            id: updatedUser._id,
+            _id: updatedUser._id,
+            username: updatedUser.username,
+            email: updatedUser.email,
+            role: updatedUser.role,
+            avatar: updatedUser.avatar || "",
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
 const logoutUser = async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
@@ -349,6 +521,115 @@ const refreshAccessToken = async (req, res) => {
     }
 };
 
+// Search users
+const searchUsers = async (req, res) => {
+    try {
+        const { search } = req.query;
+        const userId = req.user._id;
+        
+        if (!search) {
+            return res.json([]);
+        }
+
+        // Find all accepted friendships where user is either requester or recipient
+        const acceptedFriendships = await Friend.find({
+            status: "accepted",
+            $or: [
+                { requester: userId },
+                { recipient: userId }
+            ]
+        });
+
+        // Get IDs of existing friends
+        const friendIds = acceptedFriendships.map(friendship => 
+            friendship.requester.toString() === userId.toString() 
+                ? friendship.recipient.toString() 
+                : friendship.requester.toString()
+        );
+
+        // Find all pending friend requests where user is either requester or recipient
+        const pendingRequests = await Friend.find({
+            status: "pending",
+            $or: [
+                { requester: userId },
+                { recipient: userId }
+            ]
+        });
+
+        // Get IDs of users with pending requests
+        const pendingUserIds = pendingRequests.map(request => 
+            request.requester.toString() === userId.toString() 
+                ? request.recipient.toString() 
+                : request.requester.toString()
+        );
+
+        // Combine IDs to exclude (friends + pending requests + current user)
+        const excludeIds = [...friendIds, ...pendingUserIds, userId.toString()];
+
+        // Search for users excluding the above IDs
+        const users = await User.find({
+            _id: { $nin: excludeIds },
+            username: { $regex: search, $options: "i" }
+        }).select("-password -email -refreshToken -otp -otpExpires -resetPasswordToken -resetPasswordExpires -restPasswordToken");
+
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+const uploadAvatar = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                message: "Please select an image."
+            });
+        }
+
+        const uploadStream = cloudinary.uploader.upload_stream(
+            {
+                folder: "gaming-platform/avatars",
+            },
+            async (error, result) => {
+                if (error) {
+                    return res.status(500).json({
+                        message: "Cloudinary upload failed.",
+                        error,
+                    });
+                }
+
+                const user = await User.findById(req.user._id);
+
+                if (!user) {
+                    return res.status(404).json({
+                        message: "User not found",
+                    });
+                }
+
+                user.avatar = result.secure_url;
+
+                await user.save();
+
+                res.status(200).json({
+                    message: "Avatar uploaded successfully",
+                    avatar: user.avatar,
+                });
+            }
+        );
+
+        streamifier
+            .createReadStream(req.file.buffer)
+            .pipe(uploadStream);
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Server Error",
+        });
+    }
+};
+
 module.exports = {
  registerUser,
  verifyOtp,
@@ -358,5 +639,9 @@ module.exports = {
  forgotPassword,
  resetPassword,
  logoutUser,
- getUserProfile
+ getUserProfile,
+ updateProfile,
+ uploadAvatar,
+ searchUsers,
+ checkUsernameAvailability
 };

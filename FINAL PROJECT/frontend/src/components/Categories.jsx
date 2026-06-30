@@ -63,7 +63,7 @@ const categories = [
   },
 ];
 
-export default function Categories() {
+export default function Categories({ isLoggedIn = false }) {
   return (
     <section className="relative py-20">
       {/* Red Glow */}
@@ -107,12 +107,12 @@ export default function Categories() {
             return (
               <Tilt
                 key={category.title}
-                tiltMaxAngleX={8}
-                tiltMaxAngleY={8}
-                glareEnable
+                tiltMaxAngleX={isLoggedIn ? 8 : 0}
+                tiltMaxAngleY={isLoggedIn ? 8 : 0}
+                glareEnable={isLoggedIn}
                 glareMaxOpacity={0.1}
                 glareColor="#ffffff"
-                scale={1.02}
+                scale={isLoggedIn ? 1.02 : 1}
               >
                 <motion.div
                   initial={{ opacity: 0, y: 40 }}
@@ -122,10 +122,10 @@ export default function Categories() {
                     delay: index * .05,
                   }}
                   viewport={{ once: true }}
-                  whileHover={{
-                    y: -6,
-                  }}
-                  className="group relative overflow-hidden rounded-xl border border-red-500/20 bg-white/5 p-6 backdrop-blur-xl cursor-pointer transition-all duration-300 hover:border-red-500/40"
+                  whileHover={isLoggedIn ? { y: -6 } : {}}
+                  className={`group relative overflow-hidden rounded-xl border border-red-500/20 bg-white/5 p-6 backdrop-blur-xl transition-all duration-300 ${
+                    isLoggedIn ? "cursor-pointer hover:border-red-500/40" : "cursor-not-allowed opacity-75"
+                  }`}
                 >
                   {/* Icon */}
                   

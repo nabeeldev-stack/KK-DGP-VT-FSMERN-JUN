@@ -15,9 +15,9 @@ import "swiper/css/navigation";
 
 import axios from "axios";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API = import.meta.env.VITE_API_URL || "http://localhost:5002";
 
-export default function Trending() {
+export default function Trending({ isLoggedIn = false }) {
   const [games, setGames] = useState([]);
 
   useEffect(() => {
@@ -62,13 +62,19 @@ export default function Trending() {
             </h2>
           </div>
 
-          <Link
-            to="/games"
-            className="hidden md:flex items-center gap-2 text-red-400 hover:text-white transition font-semibold"
-          >
-            View All
-            <FaArrowRight />
-          </Link>
+          {isLoggedIn ? (
+            <Link
+              to="/games"
+              className="hidden md:flex items-center gap-2 text-red-400 hover:text-white transition font-semibold"
+            >
+              View All
+              <FaArrowRight />
+            </Link>
+          ) : (
+            <div className="hidden md:flex items-center gap-2 text-gray-500 font-semibold cursor-not-allowed">
+              🔒 Login to View
+            </div>
+          )}
         </motion.div>
 
         <Swiper
@@ -135,13 +141,20 @@ export default function Trending() {
                     <span>👀 {game.views || 0} Views</span>
                   </div>
 
-                  <Link
-                    to={`/games/${game._id}`}
-                    className="flex items-center justify-between rounded-xl bg-gradient-to-r from-red-600 to-orange-500 px-5 py-3 font-semibold text-white transition hover:scale-[1.02]"
-                  >
-                    <span>View Details</span>
-                    <FaGamepad />
-                  </Link>
+                  {isLoggedIn ? (
+                    <Link
+                      to={`/games/${game._id}`}
+                      className="flex items-center justify-between rounded-xl bg-gradient-to-r from-red-600 to-orange-500 px-5 py-3 font-semibold text-white transition hover:scale-[1.02]"
+                    >
+                      <span>View Details</span>
+                      <FaGamepad />
+                    </Link>
+                  ) : (
+                    <div className="flex items-center justify-between rounded-xl bg-gray-700/50 px-5 py-3 font-semibold text-gray-400 cursor-not-allowed">
+                      <span>🔒 Login to View</span>
+                      <FaGamepad />
+                    </div>
+                  )}
                 </div>
 
               </motion.div>

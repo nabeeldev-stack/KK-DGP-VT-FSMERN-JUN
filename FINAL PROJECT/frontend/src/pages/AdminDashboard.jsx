@@ -83,7 +83,7 @@ function AdminDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#1a0000] via-[#0a0a0b] to-[#120000] text-white py-12 px-4">
+        <div className="min-h-screen bg-gradient-to-br from-[#1a0000] via-[#0a0a0b] to-[#120000] text-white pt-24 pb-12 px-4">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <motion.div

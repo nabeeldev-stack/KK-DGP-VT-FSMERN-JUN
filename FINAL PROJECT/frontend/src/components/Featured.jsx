@@ -4,9 +4,9 @@ import { FaStar, FaArrowRight, FaGamepad, FaPlay, FaChevronLeft, FaChevronRight 
 import { Link } from "react-router-dom";
 import axios from "axios";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API = import.meta.env.VITE_API_URL || "http://localhost:5002";
 
-export default function Featured() {
+export default function Featured({ isLoggedIn = false }) {
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -190,127 +190,140 @@ export default function Featured() {
                       transition={{ duration: 0.5, delay: 0.6 }}
                       className="flex flex-wrap gap-4"
                     >
-                      <Link
-                        to={`/games/${selectedGame._id}`}
-                        className="inline-flex items-center gap-2 rounded-xl bg-white text-black px-6 py-3 font-bold transition hover:scale-105"
-                      >
-                        <FaPlay />
-                        Play Now
-                      </Link>
-                      <Link
-                        to={`/games/${selectedGame._id}`}
-                        className="inline-flex items-center gap-2 rounded-xl border-2 border-red-500/50 bg-red-500/5 px-6 py-3 font-bold text-white backdrop-blur-xl transition hover:bg-red-500/10"
-                      >
-                        More Info
-                        <FaArrowRight />
-                      </Link>
+                      {isLoggedIn ? (
+                        <>
+                          <Link
+                            to={`/games/${selectedGame._id}`}
+                            className="inline-flex items-center gap-2 rounded-xl bg-white text-black px-6 py-3 font-bold transition hover:scale-105"
+                          >
+                            <FaPlay />
+                            Play Now
+                          </Link>
+                          <Link
+                            to={`/games/${selectedGame._id}`}
+                            className="inline-flex items-center gap-2 rounded-xl border-2 border-red-500/50 bg-red-500/5 px-6 py-3 font-bold text-white backdrop-blur-xl transition hover:bg-red-500/10"
+                          >
+                            More Info
+                            <FaArrowRight />
+                          </Link>
+                        </>
+                      ) : (
+                        <div className="inline-flex items-center gap-2 rounded-xl bg-gray-700/50 px-6 py-3 font-bold text-gray-400 cursor-not-allowed">
+                          🔒 Login to View
+                        </div>
+                      )}
                     </motion.div>
                   </div>
                 </div>
 
                 {/* Navigation Arrows */}
-                <button
-                  onClick={goToPrevious}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 backdrop-blur-xl border border-red-500/20 flex items-center justify-center text-white hover:bg-red-500/20 transition z-10"
-                >
-                  <FaChevronLeft />
-                </button>
-                <button
-                  onClick={goToNext}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 backdrop-blur-xl border border-red-500/20 flex items-center justify-center text-white hover:bg-red-500/20 transition z-10"
-                >
-                  <FaChevronRight />
-                </button>
-
-                {/* Slide Indicators */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-                  {games.map((_, idx) => (
+                {isLoggedIn ? (
+                  <>
                     <button
-                      key={idx}
-                      onClick={() => setSelectedIndex(idx)}
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        idx === selectedIndex
-                          ? "w-8 bg-red-500"
-                          : "w-2 bg-white/30 hover:bg-white/50"
-                      }`}
-                    />
-                  ))}
-                </div>
+                      onClick={goToPrevious}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 backdrop-blur-xl border border-red-500/20 flex items-center justify-center text-white hover:bg-red-500/20 transition z-10"
+                    >
+                      <FaChevronLeft />
+                    </button>
+                    <button
+                      onClick={goToNext}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 backdrop-blur-xl border border-red-500/20 flex items-center justify-center text-white hover:bg-red-500/20 transition z-10"
+                    >
+                      <FaChevronRight />
+                    </button>
+
+                    {/* Slide Indicators */}
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                      {games.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setSelectedIndex(idx)}
+                          className={`h-2 rounded-full transition-all duration-300 ${
+                            idx === selectedIndex
+                              ? "w-8 bg-red-500"
+                              : "w-2 bg-white/30 hover:bg-white/50"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                ) : null}
               </div>
             )}
           </motion.div>
 
           {/* Sidebar - Right Side (1/3 width) */}
-          <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: .8, delay: .2 }}
-            className="lg:col-span-1"
-          >
-            <div className="rounded-2xl border border-red-500/20 bg-white/5 backdrop-blur-xl overflow-hidden h-full">
-              {/* Header */}
-              <div className="p-4 border-b border-red-500/10">
-                <h3 className="text-lg font-bold text-white">More Featured Games</h3>
-              </div>
+          {isLoggedIn && (
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: .8, delay: .2 }}
+              className="lg:col-span-1"
+            >
+              <div className="rounded-2xl border border-red-500/20 bg-white/5 backdrop-blur-xl overflow-hidden h-full">
+                {/* Header */}
+                <div className="p-4 border-b border-red-500/10">
+                  <h3 className="text-lg font-bold text-white">More Featured Games</h3>
+                </div>
 
-              {/* Game List */}
-              <div className="max-h-[420px] overflow-y-auto">
-                {games.map((game, index) => (
-                  <motion.div
-                    key={game._id}
-                    initial={{ opacity: 0, x: 20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: .5, delay: index * .1 }}
-                    onClick={() => setSelectedIndex(index)}
-                    className={`group flex items-center gap-4 p-4 border-b border-red-500/5 last:border-b-0 cursor-pointer transition ${
-                      index === selectedIndex ? "bg-red-500/10" : "hover:bg-red-500/5"
-                    }`}
-                  >
-                    {/* Thumbnail */}
-                    <div className="relative h-16 w-16 flex-shrink-0 rounded-lg overflow-hidden">
-                      <img
-                        src={
-                          game.imageUrl ||
-                          "https://placehold.co/100x100?text=Game"
-                        }
-                        alt={game.title}
-                        className="h-full w-full object-cover"
-                      />
-                      {index === selectedIndex && (
-                        <div className="absolute inset-0 bg-red-500/30 flex items-center justify-center">
-                          <FaPlay className="text-white text-xs" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <h4 className={`text-sm font-bold truncate transition ${
-                        index === selectedIndex ? "text-red-400" : "text-white group-hover:text-red-400"
-                      }`}>
-                        {game.title}
-                      </h4>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {game.genre || "Action"}
-                      </p>
-                      <div className="flex items-center gap-1 mt-1">
-                        <FaStar className="text-yellow-400 text-xs" />
-                        <span className="text-xs text-gray-300">{game.rating || "4.8"}</span>
+                {/* Game List */}
+                <div className="max-h-[420px] overflow-y-auto">
+                  {games.map((game, index) => (
+                    <motion.div
+                      key={game._id}
+                      initial={{ opacity: 0, x: 20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: .5, delay: index * .1 }}
+                      onClick={() => setSelectedIndex(index)}
+                      className={`group flex items-center gap-4 p-4 border-b border-red-500/5 last:border-b-0 cursor-pointer transition ${
+                        index === selectedIndex ? "bg-red-500/10" : "hover:bg-red-500/5"
+                      }`}
+                    >
+                      {/* Thumbnail */}
+                      <div className="relative h-16 w-16 flex-shrink-0 rounded-lg overflow-hidden">
+                        <img
+                          src={
+                            game.imageUrl ||
+                            "https://placehold.co/100x100?text=Game"
+                          }
+                          alt={game.title}
+                          className="h-full w-full object-cover"
+                        />
+                        {index === selectedIndex && (
+                          <div className="absolute inset-0 bg-red-500/30 flex items-center justify-center">
+                            <FaPlay className="text-white text-xs" />
+                          </div>
+                        )}
                       </div>
-                    </div>
 
-                    {/* Arrow */}
-                    <FaArrowRight className={`transition flex-shrink-0 ${
-                      index === selectedIndex ? "text-red-400" : "text-gray-500 group-hover:text-red-400"
-                    }`} />
-                  </motion.div>
-                ))}
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <h4 className={`text-sm font-bold truncate transition ${
+                          index === selectedIndex ? "text-red-400" : "text-white group-hover:text-red-400"
+                        }`}>
+                          {game.title}
+                        </h4>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {game.genre || "Action"}
+                        </p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <FaStar className="text-yellow-400 text-xs" />
+                          <span className="text-xs text-gray-300">{game.rating || "4.8"}</span>
+                        </div>
+                      </div>
+
+                      {/* Arrow */}
+                      <FaArrowRight className={`transition flex-shrink-0 ${
+                        index === selectedIndex ? "text-red-400" : "text-gray-500 group-hover:text-red-400"
+                      }`} />
+                    </motion.div>
+                  ))}
+                </div>
               </div>
-            </div>
-          </motion.div>
-
+            </motion.div>
+          )}
         </div>
 
       </div>

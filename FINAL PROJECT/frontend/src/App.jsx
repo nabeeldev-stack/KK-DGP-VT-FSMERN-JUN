@@ -8,10 +8,13 @@ import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import Games from "./pages/Games";
 import AddGame from "./pages/AddGame";
+import Friends from "./pages/Friends";
 import AdminRoute from "./components/AdminRoute";
 import ProtectedRoute from "./components/ProtectedRoutes";
+import RestrictedRoute from "./components/RestrictedRoute";
+import PublicOnlyRoute from "./components/PublicOnlyRoute";
 import ResetPassword from "./pages/ResetPassword";
-import ForgotPassword from "./pages/ForgotPassword"
+import ForgotPassword from "./pages/ForgotPassword";
 import AdminDashboard from "./pages/AdminDashboard";
 import TopGames from "./pages/TopGames";
 import GameDetails from "./pages/GameDetails";
@@ -33,41 +36,65 @@ function App() {
 
         <Route
           path="/login"
-          element={<Login />}
+          element={
+            <PublicOnlyRoute>
+              <Login />
+            </PublicOnlyRoute>
+          }
         />
 
         <Route
           path="/register"
-          element={<Register />}
+          element={
+            <PublicOnlyRoute>
+              <Register />
+            </PublicOnlyRoute>
+          }
         />
 
         <Route
           path="/profile"
           element={
-            <ProtectedRoute>
+            <RestrictedRoute>
               <Profile />
-            </ProtectedRoute>
+            </RestrictedRoute>
           }
         />
 
         <Route
           path="/forgot-password"
-          element={<ForgotPassword />}
+          element={
+            <RestrictedRoute>
+              <ForgotPassword />
+            </RestrictedRoute>
+          }
         />
 
         <Route
           path="/reset-password/:token"
-          element={<ResetPassword />}
+          element={
+            <RestrictedRoute>
+              <ResetPassword />
+            </RestrictedRoute>
+          }
         />
 
         <Route
           path="/verify-otp"
-          element={<VerifyOtp />}
+          element={
+            <RestrictedRoute>
+              <VerifyOtp />
+            </RestrictedRoute>
+          }
         />
 
         <Route 
            path="/games"
-           element={<Games />}
+           element={
+            <RestrictedRoute>
+              <Games />
+            </RestrictedRoute>
+           }
            />
 
            <Route 
@@ -89,12 +116,20 @@ function App() {
 />
 <Route
     path="/top-games"
-    element={<TopGames />}
+    element={
+      <RestrictedRoute>
+        <TopGames />
+      </RestrictedRoute>
+    }
 />
 
 <Route
     path="/games/:id"
-    element={<GameDetails />}
+    element={
+      <RestrictedRoute>
+        <GameDetails />
+      </RestrictedRoute>
+    }
 />
 
         <Route
@@ -103,6 +138,15 @@ function App() {
                 <AdminRoute>
                     <EditGame />
                 </AdminRoute>
+            }
+        />
+
+        <Route
+            path="/friends"
+            element={
+                <RestrictedRoute>
+                    <Friends />
+                </RestrictedRoute>
             }
         />
 

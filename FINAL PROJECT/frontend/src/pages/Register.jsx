@@ -1,41 +1,210 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axiosInstance from "../services/axiosInstance";
+import Notification from "../components/Notification";
 
 function Register() {
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [usernameStatus, setUsernameStatus] = useState({
+        available: null,
+        message: "",
+        suggestions: []
+    });
+    const [checkingUsername, setCheckingUsername] = useState(false);
+    const [notification, setNotification] = useState(null);
     const navigate = useNavigate();
+
+    // Debounced username check
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (username && username.length >= 3) {
+                checkUsername(username);
+            } else {
+                setUsernameStatus({ available: null, message: "", suggestions: [] });
+            }
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [username]);
+
+    const checkUsername = async (usernameToCheck) => {
+        setCheckingUsername(true);
+        try {
+            const { data } = await axiosInstance.post("/users/check-username", {
+                username: usernameToCheck
+            });
+            setUsernameStatus({
+                available: data.available,
+                message: data.message,
+                suggestions: data.suggestions || []
+            });
+        } catch (err) {
+            console.error("Username check failed:", err);
+        } finally {
+            setCheckingUsername(false);
+        }
+    };
+
+    const handleSuggestionClick = (suggestedUsername) => {
+        setUsername(suggestedUsername);
+        setUsernameStatus({
+            available: true,
+            message: "Username is available",
+            suggestions: []
+        });
+    };
 
     const submitHandler = async (e) => {
         e.preventDefault();
+        
+        // Check if username is available
+        if (usernameStatus.available === false) {
+            setNotification({
+                message: "Please choose an available username or use one of the suggestions",
+                type: "error"
+            });
+            return;
+        }
+
+        if (usernameStatus.available === null && username.length >= 3) {
+            setNotification({
+                message: "Please wait for username validation",
+                type: "warning"
+            });
+            return;
+        }
+        
         try {
             await axiosInstance.post("/users/register", { username, email, password });
-            navigate("/verify-otp", { state: { email } });
+            setNotification({
+                message: "Registration successful! OTP sent to your email.",
+                type: "success"
+            });
+            setTimeout(() => {
+                navigate("/verify-otp", { state: { email } });
+            }, 1500);
         } catch (err) {
-            alert(err.response?.data?.message || "Registration failed");
+            setNotification({
+                message: err.response?.data?.message || "Registration failed",
+                type: "error"
+            });
         }
     };
 
     return (
-        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#050816", padding: "20px" }}>
-            <div style={{ maxWidth: "420px", width: "100%", padding: "40px", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.03)", backdropFilter: "blur(16px)" }}>
-                <h1 style={{ textAlign: "center", fontSize: "2rem", fontWeight: "800", marginBottom: "8px", background: "linear-gradient(135deg, #818cf8, #c084fc)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Create Account</h1>
-                <p style={{ textAlign: "center", color: "#64748b", marginBottom: "32px" }}>Join the GameHub community</p>
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #1a0000, #0a0a0b, #120000)", padding: "20px" }}>
+            {notification && (
+                <Notification
+                    message={notification.message}
+                    type={notification.type}
+                    onClose={() => setNotification(null)}
+                />
+            )}
+            <div style={{ maxWidth: "420px", width: "100%", padding: "40px", borderRadius: "20px", border: "1px solid rgba(239,68,68,0.2)", background: "rgba(255,255,255,0.03)", backdropFilter: "blur(16px)" }}>
+                <h1 style={{ textAlign: "center", fontSize: "2rem", fontWeight: "800", marginBottom: "8px", background: "linear-gradient(135deg, #ef4444, #f97316)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Create Account</h1>
+                <p style={{ textAlign: "center", color: "#9ca3af", marginBottom: "32px" }}>Join the GameHub community</p>
                 <form onSubmit={submitHandler} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    <input type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required
-                        style={{ padding: "14px 16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "1rem", outline: "none" }} />
-                    <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required
-                        style={{ padding: "14px 16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "1rem", outline: "none" }} />
-                    <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required
-                        style={{ padding: "14px 16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "1rem", outline: "none" }} />
-                    <button type="submit"
-                        style={{ padding: "14px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", color: "#fff", fontSize: "1rem", fontWeight: "700", cursor: "pointer", marginTop: "8px" }}>
+                    <div>
+                        <input 
+                            type="text" 
+                            placeholder="Username" 
+                            value={username} 
+                            onChange={(e) => setUsername(e.target.value)} 
+                            required
+                            style={{ 
+                                padding: "14px 16px", 
+                                borderRadius: "12px", 
+                                border: `1px solid ${usernameStatus.available === true ? 'rgba(34,197,94,0.5)' : usernameStatus.available === false ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.2)'}`, 
+                                background: "rgba(255,255,255,0.05)", 
+                                color: "#fff", 
+                                fontSize: "1rem", 
+                                outline: "none",
+                                width: "100%"
+                            }} 
+                        />
+                        {checkingUsername && (
+                            <p style={{ color: "#9ca3af", fontSize: "0.875rem", marginTop: "4px" }}>Checking availability...</p>
+                        )}
+                        {!checkingUsername && usernameStatus.message && (
+                            <p style={{ 
+                                color: usernameStatus.available ? '#22c55e' : '#ef4444', 
+                                fontSize: "0.875rem", 
+                                marginTop: "4px" 
+                            }}>
+                                {usernameStatus.message}
+                            </p>
+                        )}
+                        {usernameStatus.suggestions.length > 0 && (
+                            <div style={{ marginTop: "8px", padding: "12px", borderRadius: "8px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                                <p style={{ color: "#9ca3af", fontSize: "0.875rem", marginBottom: "8px" }}>Try these available usernames:</p>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                                    {usernameStatus.suggestions.map((suggestion, index) => (
+                                        <button
+                                            key={index}
+                                            type="button"
+                                            onClick={() => handleSuggestionClick(suggestion)}
+                                            style={{
+                                                padding: "6px 12px",
+                                                borderRadius: "6px",
+                                                border: "1px solid rgba(239,68,68,0.3)",
+                                                background: "rgba(239,68,68,0.1)",
+                                                color: "#ef4444",
+                                                fontSize: "0.875rem",
+                                                cursor: "pointer",
+                                                transition: "all 0.2s"
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.target.style.background = "rgba(239,68,68,0.2)";
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.target.style.background = "rgba(239,68,68,0.1)";
+                                            }}
+                                        >
+                                            {suggestion}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    <input 
+                        type="email" 
+                        placeholder="Email" 
+                        value={email} 
+                        onChange={(e) => setEmail(e.target.value)} 
+                        required
+                        style={{ padding: "14px 16px", borderRadius: "12px", border: "1px solid rgba(239,68,68,0.2)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "1rem", outline: "none" }} 
+                    />
+                    <input 
+                        type="password" 
+                        placeholder="Password" 
+                        value={password} 
+                        onChange={(e) => setPassword(e.target.value)} 
+                        required
+                        style={{ padding: "14px 16px", borderRadius: "12px", border: "1px solid rgba(239,68,68,0.2)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "1rem", outline: "none" }} 
+                    />
+                    <button 
+                        type="submit"
+                        disabled={usernameStatus.available === false}
+                        style={{ 
+                            padding: "14px", 
+                            borderRadius: "12px", 
+                            border: "none", 
+                            background: usernameStatus.available === false ? "rgba(239,68,68,0.5)" : "linear-gradient(135deg, #dc2626, #ea580c)", 
+                            color: "#fff", 
+                            fontSize: "1rem", 
+                            fontWeight: "700", 
+                            cursor: usernameStatus.available === false ? "not-allowed" : "pointer",
+                            marginTop: "8px",
+                            opacity: usernameStatus.available === false ? 0.6 : 1
+                        }}
+                    >
                         Create Account
                     </button>
-                    <p style={{ textAlign: "center", margin: "8px 0 0", color: "#64748b" }}>
-                        Already have an account? <Link to="/login" style={{ color: "#818cf8", textDecoration: "none", fontWeight: "600" }}>Login</Link>
+                    <p style={{ textAlign: "center", margin: "8px 0 0", color: "#9ca3af" }}>
+                        Already have an account? <Link to="/login" style={{ color: "#ef4444", textDecoration: "none", fontWeight: "600" }}>Login</Link>
                     </p>
                 </form>
             </div>

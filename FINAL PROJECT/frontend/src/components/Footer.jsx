@@ -60,7 +60,7 @@ export default function Footer() {
 
                 <h2 className="text-2xl font-black">
 
-                  SynthPlay.Ai
+                  SynthPlay
 
                 </h2>
 

@@ -1,91 +1,187 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import axiosInstance from "../services/axiosInstance";
-import { FaUser, FaEnvelope, FaLock, FaSignOutAlt, FaGamepad, FaEdit, FaShieldAlt } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaLock, FaSignOutAlt, FaGamepad, FaEdit, FaShieldAlt, FaCamera } from "react-icons/fa";
+import AvatarCropper from "../components/AvatarCropper";
 
 function Profile() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [uploading, setUploading] = useState(false);
     const [editing, setEditing] = useState(false);
-    const [formData, setFormData] = useState({
-        username: "",
-        email: "",
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: ""
-    });
+    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [message, setMessage] = useState({ type: "", text: "" });
+    const [imageSrc, setImageSrc] = useState(null);
+    const [showCropper, setShowCropper] = useState(false);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchUser();
-    }, []);
-
-    const fetchUser = async () => {
+    const fetchUser = useCallback(async () => {
         try {
             const res = await axiosInstance.get("/users/profile");
             setUser(res.data);
-            setFormData({
-                username: res.data.username,
-                email: res.data.email,
-                currentPassword: "",
-                newPassword: "",
-                confirmPassword: ""
-            });
+            setUsername(res.data.username || "");
+            setEmail(res.data.email || "");
         } catch (err) {
             console.error(err);
         } finally {
             setLoading(false);
         }
+    }, []);
+
+    useEffect(() => {
+        fetchUser();
+    }, [fetchUser]);
+
+    const clearMessage = () => setMessage({ type: "", text: "" });
+
+    const startEditing = () => {
+        setUsername(user?.username || "");
+        setEmail(user?.email || "");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setEditing(true);
+        clearMessage();
     };
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-        setMessage({ type: "", text: "" });
+    const cancelEditing = () => {
+        setUsername(user?.username || "");
+        setEmail(user?.email || "");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setEditing(false);
+        clearMessage();
+    };
+
+    const handleFileSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+        if (!allowedTypes.includes(file.type)) {
+            setMessage({ type: "error", text: "Only JPG, PNG, GIF & WebP images are allowed." });
+            return;
+        }
+
+        if (file.size > 2 * 1024 * 1024) {
+            setMessage({ type: "error", text: "File size must be under 2MB." });
+            return;
+        }
+
+        // Create image URL for cropper
+        const reader = new FileReader();
+        reader.onload = () => {
+            setImageSrc(reader.result);
+            setShowCropper(true);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleCropComplete = async (croppedBlob) => {
+        setShowCropper(false);
+        setUploading(true);
+        clearMessage();
+
+        try {
+            const form = new FormData();
+            form.append("avatar", croppedBlob, "avatar.jpg");
+
+            const res = await axiosInstance.put("/users/avatar", form, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+
+            setUser((prev) => ({ ...prev, avatar: res.data.avatar }));
+
+            // Update localStorage
+            const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+            storedUser.avatar = res.data.avatar;
+            localStorage.setItem("user", JSON.stringify(storedUser));
+
+            // Notify Navbar
+            window.dispatchEvent(new Event("user-updated"));
+
+            setMessage({ type: "success", text: "Avatar uploaded successfully!" });
+        } catch (err) {
+            setMessage({
+                type: "error",
+                text: err?.response?.data?.message || "Failed to upload avatar",
+            });
+        } finally {
+            setUploading(false);
+            setImageSrc(null);
+        }
+    };
+
+    const handleCropCancel = () => {
+        setShowCropper(false);
+        setImageSrc(null);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setMessage({ type: "", text: "" });
+        clearMessage();
 
         try {
-            const updateData = {
-                username: formData.username,
-                email: formData.email
-            };
+            const updateData = { username, email };
 
-            // Only include password fields if user wants to change password
-            if (formData.newPassword) {
-                if (formData.newPassword !== formData.confirmPassword) {
+            if (newPassword) {
+                if (newPassword !== confirmPassword) {
                     setMessage({ type: "error", text: "New passwords do not match" });
                     return;
                 }
-                if (formData.newPassword.length < 6) {
+                if (newPassword.length < 6) {
                     setMessage({ type: "error", text: "Password must be at least 6 characters" });
                     return;
                 }
-                updateData.currentPassword = formData.currentPassword;
-                updateData.newPassword = formData.newPassword;
+                updateData.currentPassword = currentPassword;
+                updateData.newPassword = newPassword;
             }
 
             const res = await axiosInstance.put("/users/profile", updateData);
-            setUser(res.data);
+            const updatedUser = { ...user, ...res.data };
+            setUser(updatedUser);
+
+            // Update localStorage
+            localStorage.setItem("user", JSON.stringify({
+                id: updatedUser._id || updatedUser.id,
+                username: updatedUser.username,
+                email: updatedUser.email,
+                role: updatedUser.role,
+                avatar: updatedUser.avatar || "",
+            }));
+
+            // Notify Navbar
+            window.dispatchEvent(new Event("user-updated"));
+
             setMessage({ type: "success", text: "Profile updated successfully!" });
+            setCurrentPassword("");
+            setNewPassword("");
+            setConfirmPassword("");
             setEditing(false);
-            setFormData({ ...formData, currentPassword: "", newPassword: "", confirmPassword: "" });
         } catch (err) {
-            setMessage({ 
-                type: "error", 
-                text: err?.response?.data?.message || "Failed to update profile" 
+            setMessage({
+                type: "error",
+                text: err?.response?.data?.message || "Failed to update profile",
             });
         }
     };
 
-    const logout = () => {
+    const logout = async () => {
+        try {
+            await axiosInstance.post("/users/logout");
+        } catch {
+            // Best-effort
+        }
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
+        window.dispatchEvent(new Event("user-updated"));
         navigate("/login");
     };
 
@@ -101,7 +197,7 @@ function Profile() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#1a0000] via-[#0a0a0b] to-[#120000] text-white py-12 px-4">
+        <div className="min-h-screen bg-gradient-to-br from-[#1a0000] via-[#0a0a0b] to-[#120000] text-white pt-24 pb-12 px-4">
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <motion.div
@@ -119,13 +215,43 @@ function Profile() {
                     animate={{ opacity: 1, y: 0 }}
                     className="rounded-2xl border border-red-500/20 bg-white/5 backdrop-blur-xl p-8 mb-6"
                 >
-                    {/* Profile Header */}
+                    {/* Profile Header with Avatar */}
                     <div className="flex items-center gap-6 mb-8 pb-8 border-b border-red-500/10">
-                        <div className="relative">
+                        <div className="relative group">
                             <div className="absolute inset-0 bg-red-600/30 blur-xl rounded-full" />
-                            <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center text-3xl font-bold">
-                                {user?.username?.charAt(0).toUpperCase()}
-                            </div>
+                            {user?.avatar ? (
+                                <img
+                                    src={user.avatar}
+                                    alt={user.username}
+                                    className="relative w-24 h-24 rounded-full object-cover border-2 border-red-500/30"
+                                />
+                            ) : (
+                                <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center text-4xl font-bold">
+                                    {user?.username?.charAt(0).toUpperCase()}
+                                </div>
+                            )}
+                            {/* Upload Overlay */}
+                            <label className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-200">
+                                <div className="text-center">
+                                    <FaCamera className="text-white text-xl mx-auto mb-1" />
+                                    <span className="text-white text-xs font-semibold">
+                                        {uploading ? "..." : "Change"}
+                                    </span>
+                                </div>
+                                <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/gif,image/webp"
+                                    onChange={handleFileSelect}
+                                    className="hidden"
+                                    disabled={uploading || showCropper}
+                                />
+                            </label>
+                            {/* Upload spinner */}
+                            {uploading && (
+                                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/60">
+                                    <div className="w-8 h-8 border-[3px] border-red-500 border-t-transparent rounded-full animate-spin" />
+                                </div>
+                            )}
                         </div>
                         <div>
                             <h2 className="text-2xl font-bold text-white mb-1">{user?.username}</h2>
@@ -145,8 +271,8 @@ function Profile() {
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             className={`mb-6 p-4 rounded-lg ${
-                                message.type === "success" 
-                                    ? "bg-green-500/10 border border-green-500/30 text-green-400" 
+                                message.type === "success"
+                                    ? "bg-green-500/10 border border-green-500/30 text-green-400"
                                     : "bg-red-500/10 border border-red-500/30 text-red-400"
                             }`}
                         >
@@ -154,43 +280,37 @@ function Profile() {
                         </motion.div>
                     )}
 
-                    {/* Profile Form */}
-                    <form onSubmit={handleSubmit}>
-                        {/* Username & Email */}
-                        <div className="grid md:grid-cols-2 gap-6 mb-6">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                                    <FaUser className="inline mr-2 text-red-400" />
-                                    Username
-                                </label>
-                                <input
-                                    type="text"
-                                    name="username"
-                                    value={formData.username}
-                                    onChange={handleChange}
-                                    disabled={!editing}
-                                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-red-500/20 text-white placeholder-gray-400 focus:outline-none focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                />
+                    {/* Profile Form - only render form element when editing */}
+                    {editing ? (
+                        <form onSubmit={handleSubmit}>
+                            <div className="grid md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-300 mb-2">
+                                        <FaUser className="inline mr-2 text-red-400" />
+                                        Username
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-lg bg-white/5 border border-red-500/20 text-white placeholder-gray-400 focus:outline-none focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20 transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-300 mb-2">
+                                        <FaEnvelope className="inline mr-2 text-red-400" />
+                                        Email
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-lg bg-white/5 border border-red-500/20 text-white placeholder-gray-400 focus:outline-none focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20 transition-all"
+                                    />
+                                </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                                    <FaEnvelope className="inline mr-2 text-red-400" />
-                                    Email
-                                </label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    disabled={!editing}
-                                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-red-500/20 text-white placeholder-gray-400 focus:outline-none focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Password Section */}
-                        {editing && (
+                            {/* Password Section */}
                             <motion.div
                                 initial={{ opacity: 0, height: 0 }}
                                 animate={{ opacity: 1, height: "auto" }}
@@ -198,7 +318,7 @@ function Profile() {
                             >
                                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                                     <FaLock className="text-red-400" />
-                                    Change Password
+                                    Change Password (Optional)
                                 </h3>
                                 <div className="space-y-4">
                                     <div>
@@ -207,9 +327,8 @@ function Profile() {
                                         </label>
                                         <input
                                             type="password"
-                                            name="currentPassword"
-                                            value={formData.currentPassword}
-                                            onChange={handleChange}
+                                            value={currentPassword}
+                                            onChange={(e) => setCurrentPassword(e.target.value)}
                                             placeholder="Enter current password"
                                             className="w-full px-4 py-3 rounded-lg bg-white/5 border border-red-500/20 text-white placeholder-gray-400 focus:outline-none focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20 transition-all"
                                         />
@@ -221,9 +340,8 @@ function Profile() {
                                             </label>
                                             <input
                                                 type="password"
-                                                name="newPassword"
-                                                value={formData.newPassword}
-                                                onChange={handleChange}
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
                                                 placeholder="Enter new password"
                                                 className="w-full px-4 py-3 rounded-lg bg-white/5 border border-red-500/20 text-white placeholder-gray-400 focus:outline-none focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20 transition-all"
                                             />
@@ -234,9 +352,8 @@ function Profile() {
                                             </label>
                                             <input
                                                 type="password"
-                                                name="confirmPassword"
-                                                value={formData.confirmPassword}
-                                                onChange={handleChange}
+                                                value={confirmPassword}
+                                                onChange={(e) => setConfirmPassword(e.target.value)}
                                                 placeholder="Confirm new password"
                                                 className="w-full px-4 py-3 rounded-lg bg-white/5 border border-red-500/20 text-white placeholder-gray-400 focus:outline-none focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20 transition-all"
                                             />
@@ -244,50 +361,63 @@ function Profile() {
                                     </div>
                                 </div>
                             </motion.div>
-                        )}
 
-                        {/* Action Buttons */}
-                        <div className="flex flex-wrap gap-3">
-                            {!editing ? (
+                            {/* Action Buttons */}
+                            <div className="flex flex-wrap gap-3">
                                 <button
-                                    type="button"
-                                    onClick={() => setEditing(true)}
+                                    type="submit"
                                     className="flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all"
                                 >
-                                    <FaEdit />
-                                    Edit Profile
+                                    <FaShieldAlt />
+                                    Save Changes
                                 </button>
-                            ) : (
-                                <>
-                                    <button
-                                        type="submit"
-                                        className="flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all"
-                                    >
-                                        <FaShieldAlt />
-                                        Save Changes
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setEditing(false);
-                                            setFormData({
-                                                ...formData,
-                                                username: user?.username,
-                                                email: user?.email,
-                                                currentPassword: "",
-                                                newPassword: "",
-                                                confirmPassword: ""
-                                            });
-                                            setMessage({ type: "", text: "" });
-                                        }}
-                                        className="px-6 py-3 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all font-semibold"
-                                    >
-                                        Cancel
-                                    </button>
-                                </>
-                            )}
+                                <button
+                                    type="button"
+                                    onClick={cancelEditing}
+                                    className="px-6 py-3 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all font-semibold"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    ) : (
+                        <div>
+                            <div className="grid md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-300 mb-2">
+                                        <FaUser className="inline mr-2 text-red-400" />
+                                        Username
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={username}
+                                        disabled
+                                        className="w-full px-4 py-3 rounded-lg bg-white/5 border border-red-500/20 text-white opacity-50 cursor-not-allowed"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-300 mb-2">
+                                        <FaEnvelope className="inline mr-2 text-red-400" />
+                                        Email
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        disabled
+                                        className="w-full px-4 py-3 rounded-lg bg-white/5 border border-red-500/20 text-white opacity-50 cursor-not-allowed"
+                                    />
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={startEditing}
+                                className="flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all"
+                            >
+                                <FaEdit />
+                                Edit Profile
+                            </button>
                         </div>
-                    </form>
+                    )}
                 </motion.div>
 
                 {/* Quick Links */}
@@ -324,6 +454,15 @@ function Profile() {
                     </button>
                 </motion.div>
             </div>
+
+            {/* Avatar Cropper Modal */}
+            {showCropper && (
+                <AvatarCropper
+                    imageSrc={imageSrc}
+                    onCropComplete={handleCropComplete}
+                    onCancel={handleCropCancel}
+                />
+            )}
         </div>
     );
 }

@@ -1,28 +1,96 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { FaGamepad } from "react-icons/fa";
+import { FaGamepad, FaUserFriends, FaEnvelope } from "react-icons/fa";
+import { getPendingRequests } from "../services/friendService";
+import { connectSocket, disconnectSocket } from "../services/socket";
 
 function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
-  const lastScrollY = useRef(0);
-  const navigate = useNavigate();
+    const [scrolled, setScrolled] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
+    const [user, setUser] = useState(null);
+    const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+    const lastScrollY = useRef(0);
+    const navigate = useNavigate();
 
-  const user = (() => {
-    try {
-      const stored = localStorage.getItem("user");
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
+  // Load user from localStorage on mount and listen for changes
+  useEffect(() => {
+    const loadUser = () => {
+      try {
+        const stored = localStorage.getItem("user");
+        setUser(stored ? JSON.parse(stored) : null);
+      } catch {
+        setUser(null);
+      }
+    };
+
+    loadUser();
+
+    // Listen for storage changes from other tabs
+    window.addEventListener("storage", loadUser);
+
+    // Also listen for a custom event so the Profile page can trigger updates
+    window.addEventListener("user-updated", loadUser);
+
+    return () => {
+      window.removeEventListener("storage", loadUser);
+      window.removeEventListener("user-updated", loadUser);
+    };
+  }, []);
+
+  // Connect socket when user is logged in
+  useEffect(() => {
+    if (user) {
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        connectSocket(token);
+      }
+    } else {
+      disconnectSocket();
     }
-  })();
+  }, [user]);
 
-  const logout = () => {
+  // Fetch pending friend requests count
+  useEffect(() => {
+    const fetchPendingRequests = async () => {
+      if (!user) {
+        setPendingRequestsCount(0);
+        return;
+      }
+
+      try {
+        const requests = await getPendingRequests();
+        setPendingRequestsCount(requests.length);
+      } catch (err) {
+        console.error("Failed to fetch pending requests:", err);
+      }
+    };
+
+    fetchPendingRequests();
+
+    // Refresh count every 30 seconds
+    const interval = setInterval(fetchPendingRequests, 30000);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
+  const logout = async () => {
+    try {
+      // Attempt to clear refreshToken on server
+      await fetch("http://localhost:5002/api/users/logout", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          "Content-Type": "application/json",
+        },
+      });
+    } catch {
+      // Server logout is best-effort
+    }
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
+    setUser(null);
     navigate("/login");
-    window.location.reload();
   };
 
   useEffect(() => {
@@ -66,7 +134,7 @@ function Navbar() {
               </div>
             </div>
             <span className="relative text-2xl font-bold bg-gradient-to-r from-red-400 via-orange-300 to-rose-400 bg-clip-text text-transparent tracking-tight">
-              SynthPlay.Ai
+              SynthPlay
             </span>
           </Link>
 
@@ -80,29 +148,58 @@ function Navbar() {
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-red-500 to-orange-500 group-hover:w-full transition-all duration-300" />
             </Link>
 
-            <Link 
-              to="/games" 
-              className="relative text-gray-300 hover:text-white transition-colors duration-200 group"
-            >
-              <span className="text-sm font-semibold tracking-wide">Games</span>
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-red-500 to-orange-500 group-hover:w-full transition-all duration-300" />
-            </Link>
+            {user ? (
+              <>
+                <Link 
+                  to="/games" 
+                  className="relative text-gray-300 hover:text-white transition-colors duration-200 group"
+                >
+                  <span className="text-sm font-semibold tracking-wide">Games</span>
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-red-500 to-orange-500 group-hover:w-full transition-all duration-300" />
+                </Link>
 
-            <Link 
-              to="/top-games" 
-              className="relative text-gray-300 hover:text-white transition-colors duration-200 group"
-            >
-              <span className="text-sm font-semibold tracking-wide">Top Games</span>
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-red-500 to-orange-500 group-hover:w-full transition-all duration-300" />
-            </Link>
+                <Link 
+                  to="/top-games" 
+                  className="relative text-gray-300 hover:text-white transition-colors duration-200 group"
+                >
+                  <span className="text-sm font-semibold tracking-wide">Top Games</span>
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-red-500 to-orange-500 group-hover:w-full transition-all duration-300" />
+                </Link>
+              </>
+            ) : null}
 
             {user ? (
               <>
                 <Link 
                   to="/profile" 
-                  className="relative text-gray-300 hover:text-white transition-colors duration-200 group"
+                  className="relative flex items-center gap-2 text-gray-300 hover:text-white transition-colors duration-200 group"
                 >
+                  {user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user.username}
+                      className="w-7 h-7 rounded-full object-cover border border-red-500/30"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center text-xs font-bold">
+                      {user.username?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <span className="text-sm font-semibold tracking-wide">Profile</span>
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-red-500 to-orange-500 group-hover:w-full transition-all duration-300" />
+                </Link>
+
+                <Link 
+                  to="/friends" 
+                  className="relative flex items-center gap-2 text-gray-300 hover:text-white transition-colors duration-200 group"
+                >
+                  <FaUserFriends className="text-sm" />
+                  <span className="text-sm font-semibold tracking-wide">Friends</span>
+                  {pendingRequestsCount > 0 && (
+                    <span className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1.5 rounded-full bg-gradient-to-r from-red-600 to-orange-500 text-white text-xs font-bold flex items-center justify-center animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.6)]">
+                      {pendingRequestsCount}
+                    </span>
+                  )}
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-red-500 to-orange-500 group-hover:w-full transition-all duration-300" />
                 </Link>
 
