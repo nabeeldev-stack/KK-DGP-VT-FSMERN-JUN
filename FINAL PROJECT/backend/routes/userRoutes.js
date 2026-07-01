@@ -14,8 +14,10 @@ const {
     forgotPassword,
     resetPassword,
     getUserProfile,
+    getUserProfileById,
     updateProfile,
     uploadAvatar,
+    uploadBanner,
     searchUsers,
     checkUsernameAvailability
 } = require("../controllers/userControllers");
@@ -50,6 +52,7 @@ router.post("/resetpassword/:token", resetPassword);
 router.post("/reset/:token", resetPassword);
 router.post("/reset", resetPassword);
 router.get("/profile", protect, getUserProfile);
+router.get("/profile/:userId", protect, getUserProfileById);
 router.put("/profile", protect, updateProfile);
 router.get("/search", protect, searchUsers);
 
@@ -58,6 +61,13 @@ router.put(
     protect,
     upload.single("avatar"),
     uploadAvatar
+);
+
+router.put(
+    "/banner",
+    protect,
+    upload.single("banner"),
+    uploadBanner
 );
 
 router.post(

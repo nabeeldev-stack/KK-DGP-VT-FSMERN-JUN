@@ -14,7 +14,11 @@ const messageSchema = mongoose.Schema(
         },
         message: {
             type: String,
-            required: true
+            default: ""
+        },
+        sticker: {
+            type: String,
+            default: null
         },
         read: {
             type: Boolean,

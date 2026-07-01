@@ -297,7 +297,13 @@ const loginUser = async (req, res) => {
                     username: user.username,
                     email: user.email,
                     role: user.role,
-                    avatar: user.avatar || ""
+                    avatar: user.avatar || "",
+                    banner: user.banner || "",
+                    bio: user.bio || "",
+                    accentColor: user.accentColor || "#5865F2",
+                    pronouns: user.pronouns || "",
+                    customStatus: user.customStatus || { emoji: "", text: "" },
+                    socialLinks: user.socialLinks || {}
                 },
                 accessToken,
                 refreshToken
@@ -385,9 +391,41 @@ const getUserProfile = async (req, res) => {
     }
 };
 
+// Get any user's public profile by ID
+const getUserProfileById = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        if (!userId) {
+            return res.status(400).json({ message: "User ID is required" });
+        }
+
+        const user = await User.findById(userId).select("-password -email -refreshToken -otp -otpExpires -resetPasswordToken -resetPasswordExpires -restPasswordToken");
+        
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
 const updateProfile = async (req, res) => {
     try {
-        const { username, email, currentPassword, newPassword } = req.body;
+        const { 
+            username, 
+            email, 
+            currentPassword, 
+            newPassword,
+            bio,
+            accentColor,
+            pronouns,
+            customStatus,
+            socialLinks
+        } = req.body;
+        
         const user = await User.findById(req.user._id);
 
         if (!user) {
@@ -432,6 +470,48 @@ const updateProfile = async (req, res) => {
             user.email = email;
         }
 
+        if (bio !== undefined) {
+            if (bio.length > 160) {
+                return res.status(400).json({ message: "Bio must be 160 characters or less" });
+            }
+            user.bio = bio;
+        }
+
+        if (accentColor !== undefined) {
+            // Validate hex color format
+            const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+            if (!hexColorRegex.test(accentColor)) {
+                return res.status(400).json({ message: "Invalid accent color format" });
+            }
+            user.accentColor = accentColor;
+        }
+
+        if (pronouns !== undefined) {
+            user.pronouns = pronouns;
+        }
+
+        if (customStatus !== undefined) {
+            if (customStatus.text && customStatus.text.length > 128) {
+                return res.status(400).json({ message: "Custom status must be 128 characters or less" });
+            }
+            user.customStatus = {
+                emoji: customStatus.emoji || "",
+                text: customStatus.text || ""
+            };
+        }
+
+        if (socialLinks !== undefined) {
+            user.socialLinks = {
+                twitter: socialLinks.twitter || "",
+                instagram: socialLinks.instagram || "",
+                youtube: socialLinks.youtube || "",
+                twitch: socialLinks.twitch || "",
+                github: socialLinks.github || "",
+                linkedin: socialLinks.linkedin || "",
+                website: socialLinks.website || ""
+            };
+        }
+
         if (newPassword) {
             if (!currentPassword) {
                 return res.status(400).json({ message: "Current password is required to set a new password" });
@@ -458,6 +538,12 @@ const updateProfile = async (req, res) => {
             email: updatedUser.email,
             role: updatedUser.role,
             avatar: updatedUser.avatar || "",
+            banner: updatedUser.banner || "",
+            bio: updatedUser.bio || "",
+            accentColor: updatedUser.accentColor || "#5865F2",
+            pronouns: updatedUser.pronouns || "",
+            customStatus: updatedUser.customStatus || { emoji: "", text: "" },
+            socialLinks: updatedUser.socialLinks || {}
         });
     } catch (error) {
         res.status(500).json({ message: "Server error", error: error.message });
@@ -630,6 +716,58 @@ const uploadAvatar = async (req, res) => {
     }
 };
 
+const uploadBanner = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                message: "Please select an image."
+            });
+        }
+
+        const uploadStream = cloudinary.uploader.upload_stream(
+            {
+                folder: "gaming-platform/banners",
+            },
+            async (error, result) => {
+                if (error) {
+                    return res.status(500).json({
+                        message: "Cloudinary upload failed.",
+                        error,
+                    });
+                }
+
+                const user = await User.findById(req.user._id);
+
+                if (!user) {
+                    return res.status(404).json({
+                        message: "User not found",
+                    });
+                }
+
+                user.banner = result.secure_url;
+
+                await user.save();
+
+                res.status(200).json({
+                    message: "Banner uploaded successfully",
+                    banner: user.banner,
+                });
+            }
+        );
+
+        streamifier
+            .createReadStream(req.file.buffer)
+            .pipe(uploadStream);
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Server Error",
+        });
+    }
+};
+
 module.exports = {
  registerUser,
  verifyOtp,
@@ -640,8 +778,10 @@ module.exports = {
  resetPassword,
  logoutUser,
  getUserProfile,
+ getUserProfileById,
  updateProfile,
  uploadAvatar,
+ uploadBanner,
  searchUsers,
  checkUsernameAvailability
 };

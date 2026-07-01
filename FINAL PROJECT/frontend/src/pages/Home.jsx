@@ -111,33 +111,59 @@ export default function Home() {
         
         <div className="relative z-10 mx-auto max-w-6xl px-6">
           <div className="overflow-hidden rounded-3xl border border-red-500/20 bg-gradient-to-br from-red-500/5 to-transparent p-12 md:p-20 text-center backdrop-blur-xl">
-            <span className="inline-block rounded-full border border-red-500/40 bg-red-500/10 px-5 py-2 text-xs font-bold uppercase tracking-[0.35em] text-red-400">
-              Join The Community
-            </span>
-            <h2 className="mt-8 text-4xl font-black leading-tight md:text-6xl">
-              Ready To
-              <span className="bg-gradient-to-r from-red-400 via-orange-300 to-rose-400 bg-clip-text text-transparent">
-                {" "}Level Up?
-              </span>
-            </h2>
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-400">
-              Discover thousands of games, write reviews, create your wishlist,
-              track your favorites, and connect with gamers from around the world.
-            </p>
-            <div className="mt-12 flex flex-wrap justify-center gap-4">
-              <button
-                onClick={() => (window.location.href = "/register")}
-                className="rounded-xl bg-gradient-to-r from-red-600 to-orange-500 px-8 py-4 font-semibold text-white transition hover:scale-105 hover:shadow-[0_0_40px_rgba(239,68,68,.45)]"
-              >
-                🚀 Create Free Account
-              </button>
-              <button
-                onClick={() => (window.location.href = "/games")}
-                className="rounded-xl border border-red-500/30 bg-red-500/5 px-8 py-4 font-semibold text-red-400 backdrop-blur-md transition hover:bg-red-500/10 hover:border-red-500/50"
-              >
-                🎮 Explore Games
-              </button>
-            </div>
+                {isLoggedIn && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-8"
+                  >
+                    <h3 className="text-3xl md:text-4xl font-bold text-white">
+                      Welcome,{" "}
+                      <span className="bg-gradient-to-r from-red-400 via-orange-300 to-rose-400 bg-clip-text text-transparent">
+                        {JSON.parse(localStorage.getItem("user"))?.username || "Gamer"}
+                      </span>
+                      <span className="text-gray-400"> 👋</span>
+                    </h3>
+                    <p className="mt-2 text-gray-500 text-base">Ready to level up your gaming experience?</p>
+                  </motion.div>
+                )}
+                <span className="inline-block rounded-full border border-red-500/40 bg-red-500/10 px-5 py-2 text-xs font-bold uppercase tracking-[0.35em] text-red-400">
+                  {isLoggedIn ? "Your Gaming Hub" : "Join The Community"}
+                </span>
+                <h2 className="mt-8 text-4xl font-black leading-tight md:text-6xl">
+                  Ready To
+                  <span className="bg-gradient-to-r from-red-400 via-orange-300 to-rose-400 bg-clip-text text-transparent">
+                    {" "}Level Up?
+                  </span>
+                </h2>
+                <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-400">
+                  Discover thousands of games, write reviews, create your wishlist,
+                  track your favorites, and connect with gamers from around the world.
+                </p>
+                <div className="mt-12 flex flex-wrap justify-center gap-4">
+                  {!isLoggedIn && (
+                    <button
+                      onClick={() => (window.location.href = "/register")}
+                      className="rounded-xl bg-gradient-to-r from-red-600 to-orange-500 px-8 py-4 font-semibold text-white transition hover:scale-105 hover:shadow-[0_0_40px_rgba(239,68,68,.45)]"
+                    >
+                      🚀 Create Free Account
+                    </button>
+                  )}
+                  <button
+                    onClick={() => (window.location.href = "/games")}
+                    className="rounded-xl border border-red-500/30 bg-red-500/5 px-8 py-4 font-semibold text-red-400 backdrop-blur-md transition hover:bg-red-500/10 hover:border-red-500/50"
+                  >
+                    🎮 Explore Games
+                  </button>
+                  {isLoggedIn && (
+                    <button
+                      onClick={() => (window.location.href = "/dashboard")}
+                      className="rounded-xl bg-gradient-to-r from-red-600 to-orange-500 px-8 py-4 font-semibold text-white transition hover:scale-105 hover:shadow-[0_0_40px_rgba(239,68,68,.45)]"
+                    >
+                      📊 Go to Dashboard
+                    </button>
+                  )}
+                </div>
           </div>
         </div>
       </section>

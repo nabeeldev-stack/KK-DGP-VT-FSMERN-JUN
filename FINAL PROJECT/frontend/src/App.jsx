@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
+import UserProfile from "./pages/UserProfile";
 import Games from "./pages/Games";
 import AddGame from "./pages/AddGame";
 import Friends from "./pages/Friends";
@@ -57,6 +58,15 @@ function App() {
           element={
             <RestrictedRoute>
               <Profile />
+            </RestrictedRoute>
+          }
+        />
+
+        <Route
+          path="/user/:userId"
+          element={
+            <RestrictedRoute>
+              <UserProfile />
             </RestrictedRoute>
           }
         />

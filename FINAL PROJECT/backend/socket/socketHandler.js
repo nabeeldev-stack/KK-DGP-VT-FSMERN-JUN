@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 const Message = require("../models/message");
 
-const connectedUsers = new Map(); // userId -> socketId
+const connectedUsers = new Map(); // userId -> { socketId, status }
 
 const setupSocket = (io) => {
     io.use(async (socket, next) => {
@@ -26,36 +26,43 @@ const setupSocket = (io) => {
         }
     });
 
-    io.on("connection", (socket) => {
+    io.on("connection", async (socket) => {
         const userId = socket.user._id.toString();
-        connectedUsers.set(userId, socket.id);
+        
+        // Set the user status (default online)
+        const prevData = connectedUsers.get(userId);
+        const userStatus = prevData?.status || "online";
+        connectedUsers.set(userId, { socketId: socket.id, status: userStatus });
 
         console.log(`User connected: ${socket.user.username} (${userId})`);
 
         // Join a personal room for direct messaging
         socket.join(userId);
 
-        // Notify all connected users about online status
-        io.emit("user-online", userId);
+        // Update user in DB
+        await User.findByIdAndUpdate(userId, { status: userStatus });
 
-        // Handle sending messages
+        // Broadcast online status to all users
+        io.emit("user-status", { userId, status: userStatus });
+
+        // Handle sending messages (unchanged from before)
         socket.on("send-message", async (data) => {
             try {
-                const { recipientId, message } = data;
+                const { recipientId, message, sticker } = data;
 
-                if (!recipientId || !message.trim()) return;
+                if (!recipientId) return;
+                if (!message?.trim() && !sticker) return;
 
-                // Save message to database
                 const newMessage = await Message.create({
                     sender: userId,
                     recipient: recipientId,
-                    message: message.trim()
+                    message: message?.trim() || "",
+                    sticker: sticker || null
                 });
 
                 const populatedMessage = await Message.findById(newMessage._id)
                     .populate("sender", "username avatar");
 
-                // Send to recipient if online
                 if (connectedUsers.has(recipientId)) {
                     io.to(recipientId).emit("receive-message", {
                         ...populatedMessage.toObject(),
@@ -63,7 +70,6 @@ const setupSocket = (io) => {
                     });
                 }
 
-                // Send back to sender for confirmation
                 socket.emit("message-sent", {
                     ...populatedMessage.toObject(),
                     _id: populatedMessage._id
@@ -103,10 +109,40 @@ const setupSocket = (io) => {
             }
         });
 
+        // Update user status (idle, dnd, online)
+        socket.on("update-status", async (data) => {
+            try {
+                const { status } = data;
+                if (!["online", "idle", "dnd"].includes(status)) return;
+
+                const userEntry = connectedUsers.get(userId);
+                if (userEntry) {
+                    userEntry.status = status;
+                    connectedUsers.set(userId, userEntry);
+                }
+
+                await User.findByIdAndUpdate(userId, { status });
+                io.emit("user-status", { userId, status });
+                console.log(`User ${socket.user.username} changed status to ${status}`);
+            } catch (error) {
+                console.error("Error updating status:", error);
+            }
+        });
+
+        // Request current statuses of all online users
+        socket.on("get-statuses", () => {
+            const statuses = {};
+            connectedUsers.forEach((value, key) => {
+                statuses[key] = value.status;
+            });
+            socket.emit("all-statuses", statuses);
+        });
+
         // Handle disconnection
-        socket.on("disconnect", () => {
+        socket.on("disconnect", async () => {
             connectedUsers.delete(userId);
-            io.emit("user-offline", userId);
+            await User.findByIdAndUpdate(userId, { status: "offline" });
+            io.emit("user-status", { userId, status: "offline" });
             console.log(`User disconnected: ${socket.user.username} (${userId})`);
         });
     });
