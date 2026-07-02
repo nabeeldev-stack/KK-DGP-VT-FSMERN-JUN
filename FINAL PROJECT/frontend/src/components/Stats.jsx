@@ -57,7 +57,7 @@ export default function Stats() {
 
   const fetchStats = async () => {
     try {
-      const res = await axios.get(`${API}/api/site/stats`);
+      const res = await API.get("/site/stats");
       setStatValues({
         games: res.data.totalGames,
         players: res.data.totalPlayers,

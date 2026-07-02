@@ -14,6 +14,8 @@ function Register() {
     });
     const [checkingUsername, setCheckingUsername] = useState(false);
     const [notification, setNotification] = useState(null);
+    const [otp, setOtp] = useState("");
+    const [verificationStage, setVerificationStage] = useState(false);
     const navigate = useNavigate();
 
     // Debounced username check
@@ -58,7 +60,7 @@ function Register() {
 
     const submitHandler = async (e) => {
         e.preventDefault();
-        
+
         // Check if username is available
         if (usernameStatus.available === false) {
             setNotification({
@@ -75,19 +77,51 @@ function Register() {
             });
             return;
         }
-        
+
         try {
             await axiosInstance.post("/users/register", { username, email, password });
+            localStorage.setItem("pendingEmail", email);
+            setVerificationStage(true);
             setNotification({
-                message: "Registration successful! OTP sent to your email.",
+                message: "Registration successful! Enter the OTP sent to your email.",
                 type: "success"
             });
-            setTimeout(() => {
-                navigate("/verify-otp", { state: { email } });
-            }, 1500);
         } catch (err) {
             setNotification({
                 message: err.response?.data?.message || "Registration failed",
+                type: "error"
+            });
+        }
+    };
+
+    const verifyOtpHandler = async (e) => {
+        e.preventDefault();
+        try {
+            await axiosInstance.post("/users/verify-otp", { email, otp });
+            localStorage.removeItem("pendingEmail");
+            setNotification({
+                message: "Account verified successfully! You can now log in.",
+                type: "success"
+            });
+            setTimeout(() => navigate("/login"), 1500);
+        } catch (err) {
+            setNotification({
+                message: err.response?.data?.message || "OTP verification failed",
+                type: "error"
+            });
+        }
+    };
+
+    const resendOtpHandler = async () => {
+        try {
+            await axiosInstance.post("/users/resend-otp", { email });
+            setNotification({
+                message: "A new OTP has been sent to your email.",
+                type: "success"
+            });
+        } catch (err) {
+            setNotification({
+                message: err.response?.data?.message || "Failed to resend OTP",
                 type: "error"
             });
         }
@@ -105,7 +139,7 @@ function Register() {
             <div style={{ maxWidth: "420px", width: "100%", padding: "40px", borderRadius: "20px", border: "1px solid rgba(239,68,68,0.2)", background: "rgba(255,255,255,0.03)", backdropFilter: "blur(16px)" }}>
                 <h1 style={{ textAlign: "center", fontSize: "2rem", fontWeight: "800", marginBottom: "8px", background: "linear-gradient(135deg, #ef4444, #f97316)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Create Account</h1>
                 <p style={{ textAlign: "center", color: "#9ca3af", marginBottom: "32px" }}>Join the GameHub community</p>
-                <form onSubmit={submitHandler} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <form onSubmit={verificationStage ? verifyOtpHandler : submitHandler} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                     <div>
                         <input 
                             type="text" 
@@ -185,24 +219,70 @@ function Register() {
                         required
                         style={{ padding: "14px 16px", borderRadius: "12px", border: "1px solid rgba(239,68,68,0.2)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "1rem", outline: "none" }} 
                     />
-                    <button 
-                        type="submit"
-                        disabled={usernameStatus.available === false}
-                        style={{ 
-                            padding: "14px", 
-                            borderRadius: "12px", 
-                            border: "none", 
-                            background: usernameStatus.available === false ? "rgba(239,68,68,0.5)" : "linear-gradient(135deg, #dc2626, #ea580c)", 
-                            color: "#fff", 
-                            fontSize: "1rem", 
-                            fontWeight: "700", 
-                            cursor: usernameStatus.available === false ? "not-allowed" : "pointer",
-                            marginTop: "8px",
-                            opacity: usernameStatus.available === false ? 0.6 : 1
-                        }}
-                    >
-                        Create Account
-                    </button>
+                    {verificationStage ? (
+                        <>
+                            <input 
+                                type="text" 
+                                placeholder="Enter OTP" 
+                                value={otp} 
+                                onChange={(e) => setOtp(e.target.value)} 
+                                required
+                                style={{ padding: "14px 16px", borderRadius: "12px", border: "1px solid rgba(239,68,68,0.2)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "1rem", outline: "none" }} 
+                            />
+                            <button 
+                                type="submit"
+                                style={{ 
+                                    padding: "14px", 
+                                    borderRadius: "12px", 
+                                    border: "none", 
+                                    background: "linear-gradient(135deg, #22c55e, #14b8a6)", 
+                                    color: "#fff", 
+                                    fontSize: "1rem", 
+                                    fontWeight: "700", 
+                                    cursor: "pointer",
+                                    marginTop: "8px"
+                                }}
+                            >
+                                Verify OTP
+                            </button>
+                            <button 
+                                type="button"
+                                onClick={resendOtpHandler}
+                                style={{ 
+                                    padding: "14px", 
+                                    borderRadius: "12px", 
+                                    border: "1px solid rgba(239,68,68,0.2)", 
+                                    background: "transparent", 
+                                    color: "#ef4444", 
+                                    fontSize: "1rem", 
+                                    fontWeight: "700", 
+                                    cursor: "pointer",
+                                    marginTop: "8px"
+                                }}
+                            >
+                                Resend OTP
+                            </button>
+                        </>
+                    ) : (
+                        <button 
+                            type="submit"
+                            disabled={usernameStatus.available === false}
+                            style={{ 
+                                padding: "14px", 
+                                borderRadius: "12px", 
+                                border: "none", 
+                                background: usernameStatus.available === false ? "rgba(239,68,68,0.5)" : "linear-gradient(135deg, #dc2626, #ea580c)", 
+                                color: "#fff", 
+                                fontSize: "1rem", 
+                                fontWeight: "700", 
+                                cursor: usernameStatus.available === false ? "not-allowed" : "pointer",
+                                marginTop: "8px",
+                                opacity: usernameStatus.available === false ? 0.6 : 1
+                            }}
+                        >
+                            Create Account
+                        </button>
+                    )}
                     <p style={{ textAlign: "center", margin: "8px 0 0", color: "#9ca3af" }}>
                         Already have an account? <Link to="/login" style={{ color: "#ef4444", textDecoration: "none", fontWeight: "600" }}>Login</Link>
                     </p>

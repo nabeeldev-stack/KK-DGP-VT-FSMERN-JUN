@@ -13,8 +13,7 @@ import {
 import "swiper/css";
 import "swiper/css/navigation";
 
-import axios from "axios";
-import { API_BASE_URL as API } from "../services/api";
+import { API } from "../services/api";
 
 export default function Trending({ isLoggedIn = false }) {
   const [games, setGames] = useState([]);
@@ -25,7 +24,7 @@ export default function Trending({ isLoggedIn = false }) {
 
   async function loadTrending() {
     try {
-      const res = await axios.get(`${API}/games`);
+      const res = await API.get("/games");
 
       const trending = [...res.data]
         .sort((a, b) => (b.views || 0) - (a.views || 0))

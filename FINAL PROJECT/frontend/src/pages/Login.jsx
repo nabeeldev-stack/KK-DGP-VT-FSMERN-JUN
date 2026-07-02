@@ -7,6 +7,7 @@ function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [notification, setNotification] = useState(null);
+    const [otp, setOtp] = useState("");
     const navigate = useNavigate();
 
     const submitHandler = async (e) => {
@@ -33,6 +34,31 @@ function Login() {
         }
     };
 
+    const verifyOtpHandler = async () => {
+        if (!email || !otp) {
+            setNotification({
+                message: "Please provide both email and OTP.",
+                type: "error"
+            });
+            return;
+        }
+
+        try {
+            await axiosInstance.post("/users/verify-otp", { email, otp });
+            setNotification({
+                message: "OTP verified successfully! Please sign in.",
+                type: "success"
+            });
+            setShowOtpSection(false);
+            setOtp("");
+        } catch (err) {
+            setNotification({
+                message: err.response?.data?.message || "OTP verification failed",
+                type: "error"
+            });
+        }
+    };
+
     return (
         <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #1a0000, #0a0a0b, #120000)", padding: "20px" }}>
             {notification && (
@@ -54,6 +80,15 @@ function Login() {
                         style={{ padding: "14px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, #dc2626, #ea580c)", color: "#fff", fontSize: "1rem", fontWeight: "700", cursor: "pointer", marginTop: "8px" }}>
                         Sign In
                     </button>
+                    <div style={{ marginTop: "16px", padding: "16px", borderRadius: "16px", border: "1px solid rgba(229,231,235,0.15)", background: "rgba(255,255,255,0.04)" }}>
+                        <p style={{ marginBottom: "12px", color: "#9ca3af", fontSize: "0.95rem" }}>If you already have an OTP, enter it here to verify your account before logging in.</p>
+                        <input type="text" placeholder="Enter OTP" value={otp} onChange={(e) => setOtp(e.target.value)}
+                            style={{ width: "100%", padding: "14px 16px", borderRadius: "12px", border: "1px solid rgba(239,68,68,0.2)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: "1rem", outline: "none", marginBottom: "12px" }} />
+                        <button type="button" onClick={verifyOtpHandler}
+                            style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, #22c55e, #14b8a6)", color: "#fff", fontSize: "1rem", fontWeight: "700", cursor: "pointer" }}>
+                            Verify OTP
+                        </button>
+                    </div>
                     <p style={{ textAlign: "center", margin: "8px 0 0", color: "#9ca3af" }}>
                         <Link to="/forgot-password" style={{ color: "#ef4444", textDecoration: "none" }}>Forgot Password?</Link>
                     </p>

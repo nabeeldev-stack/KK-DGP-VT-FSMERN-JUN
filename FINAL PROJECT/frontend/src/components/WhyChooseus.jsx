@@ -55,7 +55,7 @@ export default function WhyChooseUs() {
 
   const fetchFeatures = async () => {
     try {
-      const res = await axios.get(`${API}/api/site/features`);
+      const res = await API.get("/site/features");
       // Map icon strings to actual icon components
       const featuresWithIcons = res.data.map(feature => ({
         ...feature,

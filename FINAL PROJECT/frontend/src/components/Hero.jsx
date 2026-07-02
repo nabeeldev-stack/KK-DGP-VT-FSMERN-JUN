@@ -44,7 +44,7 @@ export default function Hero() {
 
   const fetchStats = async () => {
     try {
-      const res = await axios.get(`${API}/api/site/stats`);
+      const res = await API.get("/site/stats");
       setStats({
         totalGames: res.data.totalGames >= 1000 ? `${(res.data.totalGames / 1000).toFixed(0)}K+` : `${res.data.totalGames}+`,
         totalPlayers: res.data.totalPlayers >= 1000000 ? `${(res.data.totalPlayers / 1000000).toFixed(0)}M+` : `${(res.data.totalPlayers / 1000).toFixed(0)}K+`,
