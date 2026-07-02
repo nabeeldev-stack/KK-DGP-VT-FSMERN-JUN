@@ -16,7 +16,7 @@ const NewlyAdded = ({ isLoggedIn = false }) => {
 
   const fetchNewGames = async () => {
     try {
-      const res = await axios.get(`${API}/api/games?sort=newest&limit=4`);
+      const res = await axios.get(`${API}/games?sort=newest&limit=4`);
       setGames(res.data.slice(0, 4));
     } catch (err) {
       console.error("Error fetching new games:", err);
