@@ -2,8 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaStar, FaArrowRight, FaGamepad, FaPlay, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { Link } from "react-router-dom";
-import axios from "axios";
-import { API_BASE_URL as API } from "../services/api";
+import API from "../services/api";
 
 export default function Featured({ isLoggedIn = false }) {
   const [games, setGames] = useState([]);

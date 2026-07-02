@@ -290,26 +290,39 @@ function Friends() {
                                         const friendStatus = statuses[friend.id] || "offline";
                                         const statusColor = STATUS_COLORS[friendStatus] || STATUS_COLORS.offline;
                                         return (
-                                            <Link
+                                            <div
                                                 key={friend.id}
-                                                to={`/user/${friend.id}`}
-                                                className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all ${
-                                                    selectedFriend?.id === friend.id
-                                                        ? "bg-red-500/20 border border-red-500/30"
-                                                        : "hover:bg-white/5 border border-transparent"
-                                                }`}
+                                                className="group"
                                             >
-                                                <div className="relative">
-                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center text-white font-bold">
-                                                        {friend.username?.charAt(0).toUpperCase()}
+                                                <div className="flex items-center gap-0">
+                                                    <div
+                                                        onClick={() => handleFriendClick(friend)}
+                                                        className={`flex-1 flex items-center gap-3 p-2 rounded-l-lg cursor-pointer transition-all ${
+                                                            selectedFriend?.id === friend.id
+                                                                ? "bg-red-500/20 border border-red-500/30"
+                                                                : "hover:bg-white/5 border border-transparent"
+                                                        }`}
+                                                    >
+                                                        <div className="relative">
+                                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center text-white font-bold">
+                                                                {friend.username?.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <div className={`absolute bottom-0 right-0 w-3 h-3 ${statusColor} rounded-full border-2 border-[#0a0a0b]`} />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <h3 className="text-white text-sm font-semibold truncate">{friend.username}</h3>
+                                                            <p className="text-gray-500 text-xs truncate">{getStatusLabel(friendStatus)}</p>
+                                                        </div>
                                                     </div>
-                                                    <div className={`absolute bottom-0 right-0 w-3 h-3 ${statusColor} rounded-full border-2 border-[#0a0a0b]`} />
+                                                    <Link
+                                                        to={`/user/${friend.id}`}
+                                                        className="p-2 rounded-r-lg text-gray-500 hover:text-red-400 hover:bg-white/5 transition-all opacity-0 group-hover:opacity-100"
+                                                        title="View Profile"
+                                                    >
+                                                        <FaUserFriends className="text-xs" />
+                                                    </Link>
                                                 </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <h3 className="text-white text-sm font-semibold truncate">{friend.username}</h3>
-                                                    <p className="text-gray-500 text-xs truncate">{getStatusLabel(friendStatus)}</p>
-                                                </div>
-                                            </Link>
+                                            </div>
                                         );
                                     })}
                                 </div>

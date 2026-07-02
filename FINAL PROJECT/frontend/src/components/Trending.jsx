@@ -13,7 +13,7 @@ import {
 import "swiper/css";
 import "swiper/css/navigation";
 
-import { API } from "../services/api";
+import API from "../services/api";
 
 export default function Trending({ isLoggedIn = false }) {
   const [games, setGames] = useState([]);

@@ -371,7 +371,6 @@ const resetPassword = async (req, res) => {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         user.password = hashedPassword;
         user.resetPasswordToken = undefined;
-        user.restPasswordToken = undefined;
         user.resetPasswordExpires = undefined;
         await user.save();
 
@@ -401,7 +400,7 @@ const getUserProfileById = async (req, res) => {
             return res.status(400).json({ message: "User ID is required" });
         }
 
-        const user = await User.findById(userId).select("-password -email -refreshToken -otp -otpExpires -resetPasswordToken -resetPasswordExpires -restPasswordToken");
+        const user = await User.findById(userId).select("-password -email -refreshToken -otp -otpExpires -resetPasswordToken -resetPasswordExpires");
         
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -657,7 +656,7 @@ const searchUsers = async (req, res) => {
         const users = await User.find({
             _id: { $nin: excludeIds },
             username: { $regex: search, $options: "i" }
-        }).select("-password -email -refreshToken -otp -otpExpires -resetPasswordToken -resetPasswordExpires -restPasswordToken");
+        }).select("-password -email -refreshToken -otp -otpExpires -resetPasswordToken -resetPasswordExpires");
 
         res.json(users);
     } catch (error) {

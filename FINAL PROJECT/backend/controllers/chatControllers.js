@@ -12,7 +12,11 @@ const getMessages = async (req, res) => {
                 { sender: currentUserId, recipient: userId },
                 { sender: userId, recipient: currentUserId }
             ]
-        }).sort({ createdAt: 1 }).limit(100);
+        })
+        .populate("sender", "username avatar")
+        .populate("recipient", "username avatar")
+        .sort({ createdAt: 1 })
+        .limit(100);
 
         res.json(messages);
     } catch (error) {

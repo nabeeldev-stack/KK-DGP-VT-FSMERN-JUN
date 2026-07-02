@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { FaFire, FaStar, FaGamepad, FaArrowRight } from "react-icons/fa";
 import { Link } from "react-router-dom";
-import axios from "axios";
-import { API_BASE_URL as API } from "../services/api";
+import API from "../services/api";
 
 const NewlyAdded = ({ isLoggedIn = false }) => {
   const [games, setGames] = useState([]);
@@ -15,7 +14,7 @@ const NewlyAdded = ({ isLoggedIn = false }) => {
 
   const fetchNewGames = async () => {
     try {
-      const res = await axios.get(`${API}/games?sort=newest&limit=4`);
+      const res = await API.get("/games");
       setGames(res.data.slice(0, 4));
     } catch (err) {
       console.error("Error fetching new games:", err);

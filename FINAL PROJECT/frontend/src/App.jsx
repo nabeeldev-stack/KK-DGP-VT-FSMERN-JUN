@@ -74,27 +74,27 @@ function App() {
         <Route
           path="/forgot-password"
           element={
-            <RestrictedRoute>
+            <PublicOnlyRoute>
               <ForgotPassword />
-            </RestrictedRoute>
+            </PublicOnlyRoute>
           }
         />
 
         <Route
           path="/reset-password/:token"
           element={
-            <RestrictedRoute>
+            <PublicOnlyRoute>
               <ResetPassword />
-            </RestrictedRoute>
+            </PublicOnlyRoute>
           }
         />
 
         <Route
           path="/verify-otp"
           element={
-            <RestrictedRoute>
+            <PublicOnlyRoute>
               <VerifyOtp />
-            </RestrictedRoute>
+            </PublicOnlyRoute>
           }
         />
 
