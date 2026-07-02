@@ -26,7 +26,7 @@ export default function Trending({ isLoggedIn = false }) {
 
   async function loadTrending() {
     try {
-      const res = await axios.get(`${API}/api/games`);
+      const res = await axios.get(`${API}/games`);
 
       const trending = [...res.data]
         .sort((a, b) => (b.views || 0) - (a.views || 0))

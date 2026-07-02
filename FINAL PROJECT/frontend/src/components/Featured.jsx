@@ -17,7 +17,7 @@ export default function Featured({ isLoggedIn = false }) {
 
   async function loadGames() {
     try {
-      const res = await axios.get(`${API}/api/games`);
+      const res = await axios.get(`${API}/games`);
 
       // show highest rated games
       const featured = [...res.data]
