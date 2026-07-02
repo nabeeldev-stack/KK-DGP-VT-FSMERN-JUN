@@ -4,7 +4,7 @@ import { MdTrendingUp } from "react-icons/md";
 import Hero3D from "./Hero3d";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { API_BASE_URL as API } from "../services/api";
+import API from "../services/api";
 
 const fadeLeft = {
   hidden: { opacity: 0, x: -80 },

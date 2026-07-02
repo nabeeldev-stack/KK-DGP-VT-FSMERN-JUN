@@ -1,13 +1,12 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import axios from "axios";
 import {
   FaGamepad,
   FaUsers,
   FaShieldAlt,
   FaRocket,
 } from "react-icons/fa";
-import { API_BASE_URL as API } from "../services/api";
+import API from "../services/api";
 
 // Icon mapping
 const iconMap = {

@@ -9,7 +9,7 @@ import {
   FaStar,
   FaTrophy,
 } from "react-icons/fa";
-import { API_BASE_URL as API } from "../services/api";
+import API from "../services/api";
 
 const stats = [
   {
