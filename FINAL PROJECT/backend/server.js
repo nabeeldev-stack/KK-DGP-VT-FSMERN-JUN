@@ -15,8 +15,13 @@ const app = express();
 
 app.use(helmet());
 app.use(express.json());
+
+const CLIENT_URLS = process.env.CLIENT_URL
+    ? process.env.CLIENT_URL.split(",").map((url) => url.trim())
+    : ["https://synthplay.vercel.app"];
+
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: CLIENT_URLS,
     credentials: true
 }));
 
@@ -28,7 +33,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:5173",
+        origin: CLIENT_URLS,
         methods: ["GET", "POST"],
         credentials: true
     }

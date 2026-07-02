@@ -330,7 +330,8 @@ const forgotPassword = async (req, res) => {
         user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
         await user.save();
 
-        const resetLink = `http://localhost:${process.env.PORT || 5000}/reset-password/${resetToken}`;
+        const clientUrl = process.env.CLIENT_URL || "https://synthplay.vercel.app";
+        const resetLink = `${clientUrl.replace(/\/$/, "")}/reset-password/${resetToken}`;
 
         await sendEmail(
             user.email,
