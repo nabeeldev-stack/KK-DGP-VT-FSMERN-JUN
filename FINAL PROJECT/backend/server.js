@@ -5,7 +5,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 const errorHandler = require("./middleware/errorMiddleware");
 const helmet = require("helmet");
-dotenv.config();
+dotenv.config({ path: "./.env" });
 
 const connectDB = require("./config/db");
 

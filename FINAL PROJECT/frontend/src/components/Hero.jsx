@@ -5,7 +5,7 @@ import Hero3D from "./Hero3d";
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5002";
+const API = (import.meta.env.VITE_API_URL || "https://kk-dgp-vt-fsmern-jun.onrender.com").replace(/\/$/, "");
 
 const fadeLeft = {
   hidden: { opacity: 0, x: -80 },

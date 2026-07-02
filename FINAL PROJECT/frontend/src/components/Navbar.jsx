@@ -7,6 +7,7 @@ import SocialSidebar from "./SocialSidebar";
 import UserSidebar from "./UserSidebar";
 
 function Navbar() {
+    const API_URL = (import.meta.env.VITE_API_URL || "https://kk-dgp-vt-fsmern-jun.onrender.com").replace(/\/$/, "");
     const [scrolled, setScrolled] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
     const [user, setUser] = useState(null);
@@ -73,7 +74,7 @@ function Navbar() {
 
   const logout = async () => {
     try {
-      await fetch("http://localhost:5002/api/users/logout", {
+      await fetch(`${API_URL}/api/users/logout`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,

@@ -8,7 +8,7 @@ import {
   FaRocket,
 } from "react-icons/fa";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5002";
+const API = (import.meta.env.VITE_API_URL || "https://kk-dgp-vt-fsmern-jun.onrender.com").replace(/\/$/, "");
 
 // Icon mapping
 const iconMap = {

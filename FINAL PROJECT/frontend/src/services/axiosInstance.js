@@ -1,7 +1,9 @@
 import axios from "axios";
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "https://kk-dgp-vt-fsmern-jun.onrender.com").replace(/\/$/, "");
+
 const axiosInstance = axios.create({
-    baseURL: "http://localhost:5002/api",
+    baseURL: `${API_BASE_URL}/api`,
 });
 
 axiosInstance.interceptors.request.use(
@@ -32,7 +34,7 @@ axiosInstance.interceptors.response.use(
                 }
 
                 const { data } = await axios.post(
-                    "http://localhost:5002/api/users/refresh",
+                    `${API_BASE_URL}/api/users/refresh`,
                     { refreshToken }
                 );
 

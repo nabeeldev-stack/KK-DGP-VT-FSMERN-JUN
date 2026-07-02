@@ -4,7 +4,7 @@ import { FaFire, FaStar, FaGamepad, FaArrowRight } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import axios from "axios";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5002";
+const API = (import.meta.env.VITE_API_URL || "https://kk-dgp-vt-fsmern-jun.onrender.com").replace(/\/$/, "");
 
 const NewlyAdded = ({ isLoggedIn = false }) => {
   const [games, setGames] = useState([]);
