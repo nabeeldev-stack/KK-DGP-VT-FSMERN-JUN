@@ -14,8 +14,7 @@ import "swiper/css";
 import "swiper/css/navigation";
 
 import axios from "axios";
-
-const API = (import.meta.env.VITE_API_URL || "https://kk-dgp-vt-fsmern-jun.onrender.com").replace(/\/$/, "");
+import { API_BASE_URL as API } from "../services/api";
 
 export default function Trending({ isLoggedIn = false }) {
   const [games, setGames] = useState([]);

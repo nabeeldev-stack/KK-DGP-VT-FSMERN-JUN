@@ -5,9 +5,10 @@ import { getPendingRequests } from "../services/friendService";
 import { connectSocket, disconnectSocket } from "../services/socket";
 import SocialSidebar from "./SocialSidebar";
 import UserSidebar from "./UserSidebar";
+import { API_BASE_URL } from "../services/api";
 
 function Navbar() {
-    const API_URL = (import.meta.env.VITE_API_URL || "https://kk-dgp-vt-fsmern-jun.onrender.com").replace(/\/$/, "");
+    const API_URL = API_BASE_URL;
     const [scrolled, setScrolled] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
     const [user, setUser] = useState(null);

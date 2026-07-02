@@ -1,6 +1,5 @@
 import axios from "axios";
-
-const API_BASE_URL = (import.meta.env.VITE_API_URL || "https://kk-dgp-vt-fsmern-jun.onrender.com").replace(/\/$/, "");
+import { API_BASE_URL } from "./api";
 
 const axiosInstance = axios.create({
     baseURL: `${API_BASE_URL}`,

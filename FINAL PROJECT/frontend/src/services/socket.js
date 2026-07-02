@@ -1,6 +1,7 @@
 import { io } from "socket.io-client";
+import { API_BASE_URL } from "./api";
 
-const SOCKET_URL = (import.meta.env.VITE_API_URL || "https://kk-dgp-vt-fsmern-jun.onrender.com").replace(/\/$/, "");
+const SOCKET_URL = API_BASE_URL;
 
 let socket = null;
 let connectionListeners = [];

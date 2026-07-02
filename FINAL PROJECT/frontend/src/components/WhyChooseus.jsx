@@ -7,8 +7,7 @@ import {
   FaShieldAlt,
   FaRocket,
 } from "react-icons/fa";
-
-const API = (import.meta.env.VITE_API_URL || "https://kk-dgp-vt-fsmern-jun.onrender.com").replace(/\/$/, "");
+import { API_BASE_URL as API } from "../services/api";
 
 // Icon mapping
 const iconMap = {

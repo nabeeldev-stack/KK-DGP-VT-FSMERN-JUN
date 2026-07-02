@@ -3,8 +3,7 @@ import { motion } from "framer-motion";
 import { FaFire, FaStar, FaGamepad, FaArrowRight } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import axios from "axios";
-
-const API = (import.meta.env.VITE_API_URL || "https://kk-dgp-vt-fsmern-jun.onrender.com").replace(/\/$/, "");
+import { API_BASE_URL as API } from "../services/api";
 
 const NewlyAdded = ({ isLoggedIn = false }) => {
   const [games, setGames] = useState([]);
